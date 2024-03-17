@@ -28,11 +28,11 @@ namespace GPURenderingOpenGL
         /// 四角形のための頂点座標データ（固定）
         /// </summary>
         private static readonly float[] vertexData = {
-			// positionX, positionY, textureX, textureY
-            -TextureWidth / 2, -TextureHeight / 2,  0.0f, 1.0f, // 左下
-            -TextureWidth / 2,  TextureHeight / 2,  0.0f, 0.0f, // 左上
-             TextureWidth / 2, -TextureHeight / 2,  1.0f, 1.0f, // 右下
-             TextureWidth / 2,  TextureHeight / 2,  1.0f, 0.0f  // 右上
+			// positionX, positionY, positionZ, textureX, textureY
+            -TextureWidth / 2, -TextureHeight / 2,  0.0f, 0.0f, 1.0f, // 左下
+            -TextureWidth / 2,  TextureHeight / 2,  0.0f, 0.0f, 0.0f, // 左上
+             TextureWidth / 2, -TextureHeight / 2,  0.0f, 1.0f, 1.0f, // 右下
+             TextureWidth / 2,  TextureHeight / 2,  0.0f, 1.0f, 0.0f  // 右上
         };
         #endregion
 
@@ -83,7 +83,7 @@ namespace GPURenderingOpenGL
         /// <summary>
         /// モデル行列
         /// </summary>
-        private Matrix3 modelMatrix;
+        private Matrix4 modelMatrix;
 
         /// <summary>
         /// ビューポートサイズ
@@ -254,9 +254,9 @@ namespace GPURenderingOpenGL
 
             // 頂点データのデータ構造を指定
             GL.EnableVertexAttribArray((int)VertexAttribute.Position);
-            GL.VertexAttribPointer((int)VertexAttribute.Position, 2, VertexAttribPointerType.Float, false, sizeof(float) * 4, new IntPtr(0));
+            GL.VertexAttribPointer((int)VertexAttribute.Position, 3, VertexAttribPointerType.Float, false, sizeof(float) * 5, new IntPtr(0));
             GL.EnableVertexAttribArray((int)VertexAttribute.TextureCoordinate);
-            GL.VertexAttribPointer((int)VertexAttribute.TextureCoordinate, 2, VertexAttribPointerType.Float, false, sizeof(float) * 4, new IntPtr(2 * sizeof(float)));
+            GL.VertexAttribPointer((int)VertexAttribute.TextureCoordinate, 2, VertexAttribPointerType.Float, false, sizeof(float) * 5, new IntPtr(3 * sizeof(float)));
 
             // 頂点配列オブジェクトの指定解除
             GL.Oes.BindVertexArray(0);
@@ -442,12 +442,13 @@ namespace GPURenderingOpenGL
         {
             viewportSize = new Vector2i((int)(View.Bounds.Size.Width * UIScreen.MainScreen.Scale), (int)(View.Bounds.Size.Height * UIScreen.MainScreen.Scale));
 
-            Matrix3 translationMatrix = MakeTranslationMatrix((float)move.X, (float)move.Y);
-            Matrix3 rotationMatrix = MakeRotationMatrix((float)rotate);
-            Matrix3 scaleMatrix = MakeScaleMatrix((float)scale, (float)scale);
+            Matrix4 translationMatrix = Matrix4.CreateTranslation((float)move.X, (float)move.Y, 0.0f);
+            // UIRotationGestureRecognizerは時計回りが正
+            // CreateRotationZは反時計回りが正
+            Matrix4 rotationMatrix = Matrix4.CreateRotationZ((float)-rotate);
+            Matrix4 scaleMatrix = Matrix4.Scale((float)scale, (float)scale, 1.0f);
 
-            Matrix3.Multiply(ref translationMatrix, ref rotationMatrix, out modelMatrix);
-            Matrix3.Multiply(ref modelMatrix, ref scaleMatrix, out modelMatrix);
+            modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
         }
 
         /// <summary>
@@ -472,60 +473,13 @@ namespace GPURenderingOpenGL
             GL.BindTexture(TextureTarget.Texture2D, textureInfo.Name);
 
             // 頂点データ以外に描画に必要な情報を設定する
-            GL.UniformMatrix3(uniforms[(int)Uniform.ModelMatrix], false, ref modelMatrix);
+            GL.UniformMatrix4(uniforms[(int)Uniform.ModelMatrix], false, ref modelMatrix);
             GL.Uniform2(uniforms[(int)Uniform.ViewportSize], viewportSize.X, viewportSize.Y);
 
             // 描画を行う
             GL.DrawArrays(BeginMode.TriangleStrip, 0, 4);
         }
         #endregion
-
-        /// <summary>
-        /// 二次元での並行移動行列を作成します。
-        /// </summary>
-        /// <param name="x">x方向移動量</param>
-        /// <param name="y">y方向移動量</param>
-        /// <returns></returns>
-        public static Matrix3 MakeTranslationMatrix(float x, float y)
-        {
-            Matrix3 matrix = Matrix3.Identity;
-
-            matrix.R2C0 = x;
-            matrix.R2C1 = y;
-
-            return matrix;
-        }
-        /// <summary>
-        /// 二次元での回転行列を作成します。
-        /// </summary>
-        /// <param name="angle">回転量</param>
-        /// <returns></returns>
-        public static Matrix3 MakeRotationMatrix(float angle)
-        {
-            Matrix3 matrix = new Matrix3(
-                (float)Math.Cos(angle), -(float)Math.Sin(angle), 0.0f,
-                (float)Math.Sin(angle), (float)Math.Cos(angle), 0.0f,
-                0.0f, 0.0f, 1.0f
-            );
-
-            return matrix;
-        }
-        /// <summary>
-        /// 二次元での拡大行列を作成します。
-        /// </summary>
-        /// <param name="xScale">x方向拡大量</param>
-        /// <param name="yScale">y方向拡大量</param>
-        /// <returns></returns>
-        public static Matrix3 MakeScaleMatrix(float xScale, float yScale)
-        {
-            Matrix3 matrix = new Matrix3(
-                xScale, 0.0f, 0.0f,
-                0.0f, yScale, 0.0f,
-                0.0f, 0.0f, 1.0f
-            );
-
-            return matrix;
-        }
 
         /// <summary>
         /// リソースを取得します。

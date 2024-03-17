@@ -1,5 +1,5 @@
 // vertex position
-attribute vec2 position;
+attribute vec3 position;
 // texture coordinate
 attribute vec2 texCoordinate;
 
@@ -9,12 +9,12 @@ varying lowp vec2 outTexCoordinate;
 // viewport size
 uniform ivec2 viewportSize;
 // model matrix
-uniform mat3 modelMatrix;
+uniform mat4 modelMatrix;
 
 void main()
 {
     // multiply model matrix to apply translation, rotation, and scale
-    vec2 pixelSpacePosition = (modelMatrix * vec3(position, 1.0)).xy;
+    vec2 pixelSpacePosition = (modelMatrix * vec4(position, 1.0)).xy;
     // cast to float type
     vec2 fViewportSize = vec2(viewportSize);
 
