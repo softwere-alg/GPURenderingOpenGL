@@ -10,11 +10,14 @@ varying lowp vec2 outTexCoordinate;
 uniform ivec2 viewportSize;
 // model matrix
 uniform mat4 modelMatrix;
+// view matrix
+uniform mat4 viewMatrix;
 
 void main()
 {
     // multiply model matrix to apply translation, rotation, and scale
-    vec2 pixelSpacePosition = (modelMatrix * vec4(position, 1.0)).xy;
+    // multiply view matrix to change camera position
+    vec2 pixelSpacePosition = (viewMatrix * modelMatrix * vec4(position, 1.0)).xy;
     // cast to float type
     vec2 fViewportSize = vec2(viewportSize);
 

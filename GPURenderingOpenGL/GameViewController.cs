@@ -52,6 +52,7 @@ namespace GPURenderingOpenGL
         {
             ViewportSize = 0,   // ビューポートサイズ
             ModelMatrix,        // モデル行列
+            ViewMatrix,         // ビュー行列
             Count
         }
 
@@ -84,6 +85,10 @@ namespace GPURenderingOpenGL
         /// モデル行列
         /// </summary>
         private Matrix4 modelMatrix;
+        /// <summary>
+        /// ビュー行列
+        /// </summary>
+        private Matrix4 viewMatrix;
 
         /// <summary>
         /// ビューポートサイズ
@@ -364,6 +369,7 @@ namespace GPURenderingOpenGL
             // ユニフォーム番号の取得
             uniforms[(int)Uniform.ViewportSize] = GL.GetUniformLocation(program, "viewportSize");
             uniforms[(int)Uniform.ModelMatrix] = GL.GetUniformLocation(program, "modelMatrix");
+            uniforms[(int)Uniform.ViewMatrix] = GL.GetUniformLocation(program, "viewMatrix");
 
             // 一時オブジェクトの解放
             if (vertShader != 0)
@@ -442,13 +448,15 @@ namespace GPURenderingOpenGL
         {
             viewportSize = new Vector2i((int)(View.Bounds.Size.Width * UIScreen.MainScreen.Scale), (int)(View.Bounds.Size.Height * UIScreen.MainScreen.Scale));
 
-            Matrix4 translationMatrix = Matrix4.CreateTranslation((float)move.X, (float)move.Y, 0.0f);
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(0.0f, 0.0f, 0.0f);
             // UIRotationGestureRecognizerは時計回りが正
             // CreateRotationZは反時計回りが正
             Matrix4 rotationMatrix = Matrix4.CreateRotationZ((float)-rotate);
             Matrix4 scaleMatrix = Matrix4.Scale((float)scale, (float)scale, 1.0f);
 
             modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
+
+            viewMatrix = Matrix4.CreateTranslation((float)move.X, (float)move.Y, 0.0f);
         }
 
         /// <summary>
@@ -474,6 +482,7 @@ namespace GPURenderingOpenGL
 
             // 頂点データ以外に描画に必要な情報を設定する
             GL.UniformMatrix4(uniforms[(int)Uniform.ModelMatrix], false, ref modelMatrix);
+            GL.UniformMatrix4(uniforms[(int)Uniform.ViewMatrix], false, ref viewMatrix);
             GL.Uniform2(uniforms[(int)Uniform.ViewportSize], viewportSize.X, viewportSize.Y);
 
             // 描画を行う
